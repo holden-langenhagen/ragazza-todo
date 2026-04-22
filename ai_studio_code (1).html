@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ragazza Research Planner - Deep Checklist</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  
+  :root {
+    --bg: #f5f4f0;
+    --text: #1a1a18;
+    --card-p: #E1F5EE; --p-text: #085041; --p-border: #9FE1CB;
+    --card-s: #EEEDFE; --s-text: #3C3489; --s-border: #AFA9EC;
+    --card-r: #FAEEDA; --r-text: #633806; --r-border: #FAC775;
+    --card-m: #FCEBEB; --m-text: #791F1F; --m-border: #F09595;
+    --panel-bg: #eceae4;
+    --panel-border: #d3d1c7;
+    --accent: #1D9E75;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1a1a18;
+      --text: #e0ded6;
+      --card-p: #04342C; --p-text: #9FE1CB; --p-border: #0F6E56;
+      --card-s: #26215C; --s-text: #CECBF6; --s-border: #534AB7;
+      --card-r: #412402; --r-text: #FAC775; --r-border: #854F0B;
+      --card-m: #501313; --m-text: #F7C1C1; --m-border: #A32D2D;
+      --panel-bg: #2a2a27;
+      --panel-border: #3a3a36;
+    }
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 2rem;
+    min-height: 100vh;
+  }
+
+  .container { max-width: 1100px; margin: 0 auto; }
+
+  /* Header & Progress */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 10px;
+  }
+  .progress-container {
+    width: 100%;
+    height: 8px;
+    background: var(--panel-border);
+    border-radius: 4px;
+    margin-bottom: 25px;
+    overflow: hidden;
+  }
+  #progress-bar {
+    height: 100%;
+    width: 0%;
+    background: var(--accent);
+    transition: width 0.4s ease;
+  }
+
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 20px;}
+  .legend-item { font-size: 12px; opacity: 0.8; display: flex; align-items: center; gap: 5px; }
+  .legend-dot { display: inline-block; width: 10px; height: 10px; border-radius: 3px; }
+
+  /* Timeline Grid */
+  .timeline { 
+    display: grid; 
+    grid-template-columns: repeat(7, 1fr); 
+    gap: 10px; 
+    overflow-x: auto; 
+    padding-bottom: 15px;
+  }
+  @media (max-width: 950px) { .timeline { grid-template-columns: repeat(4, 1fr); } }
+  @media (max-width: 600px) { .timeline { grid-template-columns: repeat(2, 1fr); } }
+
+  .week-col { min-width: 130px; }
+
+  .week-head {
+    text-align: center;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 8px;
+    border-bottom: 2px solid var(--panel-border);
+    margin-bottom: 10px;
+  }
+  .week-head.current { color: #185FA5; border-bottom-color: #185FA5; }
+
+  /* Task Cards */
+  .task-card {
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 8px;
+    font-size: 12px;
+    line-height: 1.3;
+    cursor: pointer;
+    border: 1px solid transparent;
+    display: flex;
+    gap: 8px;
+    transition: all 0.2s ease;
+    position: relative;
+  }
+  
+  .task-card:hover { transform: translateY(-1px); filter: brightness(1.05); }
+  .task-card.active { border-color: var(--text); box-shadow: 0 0 0 1px var(--text); }
+  
+  .task-card.completed { opacity: 0.5; }
+  .task-card.completed .task-label { text-decoration: line-through; }
+
+  .task-card.p { background: var(--card-p); color: var(--p-text); border-color: var(--p-border); }
+  .task-card.s { background: var(--card-s); color: var(--s-text); border-color: var(--s-border); }
+  .task-card.r { background: var(--card-r); color: var(--r-text); border-color: var(--r-border); }
+  .task-card.m { background: var(--card-m); color: var(--m-text); border-color: var(--m-border); font-weight: 600; }
+
+  /* Checkboxes */
+  .checkbox {
+    width: 16px;
+    height: 16px;
+    border: 1.5px solid currentColor;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .completed .checkbox::after, .sub-item.checked .checkbox::after {
+    content: "✓";
+    font-size: 11px;
+    font-weight: bold;
+  }
+
+  /* Details Panel Sub-items */
+  .detail-panel {
+    border: 1px solid var(--panel-border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-top: 20px;
+    background: var(--panel-bg);
+    min-height: 120px;
+  }
+  .detail-panel h3 { font-size: 15px; margin-bottom: 12px; }
+  
+  .sub-list { list-style: none; }
+  .sub-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+    font-size: 14px;
+    cursor: pointer;
+    border-bottom: 0.5px solid rgba(0,0,0,0.05);
+  }
+  .sub-item:last-child { border-bottom: none; }
+  .sub-item .checkbox { border-color: var(--text); opacity: 0.4; }
+  .sub-item.checked { opacity: 0.6; }
+  .sub-item.checked .sub-text { text-decoration: line-through; }
+  .sub-item.checked .checkbox { opacity: 1; background: var(--accent); border-color: var(--accent); color: white; }
+
+  .footer { margin-top: 20px; font-size: 11px; opacity: 0.5; text-align: center; }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <div style="font-size: 18px; font-weight: 600;">Ragazza Research: 10-Week Master Checklist</div>
+    <div class="legend">
+      <span class="legend-item"><span class="legend-dot" style="background:#1D9E75"></span>Physical</span>
+      <span class="legend-item"><span class="legend-dot" style="background:#7F77DD"></span>Software</span>
+      <span class="legend-item"><span class="legend-dot" style="background:#BA7517"></span>Research</span>
+      <span class="legend-item"><span class="legend-dot" style="background:#E24B4A"></span>Milestone</span>
+    </div>
+  </div>
+
+  <div class="progress-container">
+    <div id="progress-bar"></div>
+  </div>
+
+  <div class="timeline" id="timeline"></div>
+
+  <div class="detail-panel" id="detail">
+    <h3 id="detail-title">Task Details</h3>
+    <div id="detail-content">
+      <p style="font-size: 13px; opacity: 0.7;">Select a task above to view and complete specific sub-steps.</p>
+    </div>
+  </div>
+
+  <div class="footer">Ragazza RLab · Progress saved to local storage</div>
+</div>
+
+<script>
+// Data structure with unique IDs for every sub-task
+const weeks = [
+  { n:4, label:"Wk 4", sub:"Setup", current:true, tasks:[
+    {id:"t4a", t:"p", label:"Manual water test", subs:[
+      {id:"s4a1", txt:"Verify Telemetry connection to QGC"},
+      {id:"s4a2", txt:"Test rudder and sail servo response"},
+      {id:"s4a3", txt:"Document any hardware friction/latency"}]},
+    {id:"t4b", t:"s", label:"SITL Docker", subs:[
+      {id:"s4b1", txt:"Pull and run ArduPilot Docker image"},
+      {id:"s4b2", txt:"Verify MAVProxy routing to host OS"},
+      {id:"s4b3", txt:"Connect QGC to simulated sailboat"}]},
+    {id:"t4c", t:"r", label:"CPP Research Focus", subs:[
+      {id:"s4c1", txt:"Identify gaps in tack-cost vs wind uncertainty"},
+      {id:"s4c2", txt:"Draft 1-paragraph research problem statement"}]},
+    {id:"t4d", t:"m", label:"M1: Baseline Ready", subs:[
+      {id:"s4d1", txt:"Manual control verified on water"},
+      {id:"s4d2", txt:"Simulation stack running and logging"}]}
+  ]},
+  { n:5, label:"Wk 5", sub:"Build", tasks:[
+    {id:"t5a", t:"p", label:"3D Print Mounts", subs:[
+      {id:"s5a1", txt:"Measure Pi and Pixhawk dimensions"},
+      {id:"s5a2", txt:"Print and fit internal hull brackets"},
+      {id:"s5a3", txt:"Check MAVLink physical cable continuity"}]},
+    {id:"t5b", t:"s", label:"Custom Wind Field", subs:[
+      {id:"s5b1", txt:"Implement noise-injected wind in SITL"},
+      {id:"s5b2", txt:"Tune sail-specific simulation gains"}]},
+    {id:"t5c", t:"r", label:"Algo Design Draft", subs:[
+      {id:"s5c1", txt:"Sketch MPC vs Reward-based flowcharts"},
+      {id:"s5c2", txt:"Review UPenn RENEW & MIT sailboat papers"}]}
+  ]},
+  { n:6, label:"Wk 6", sub:"Navigation", tasks:[
+    {id:"t6a", t:"p", label:"RasPi Nav Loop", subs:[
+      {id:"s6a1", txt:"Confirm Guided mode via MAVLink commands"},
+      {id:"s6a2", txt:"Test outdoor GPS lock on the boat"}]},
+    {id:"t6b", t:"s", label:"Baseline CPP Sim", subs:[
+      {id:"s6b1", txt:"Implement lawnmower/zig-zag baseline"},
+      {id:"s6b2", txt:"Log path efficiency and tack counts"}]},
+    {id:"t6c", t:"r", label:"Novel Algo v1", subs:[
+      {id:"s6c1", txt:"Code wind-aware reward function in Python"},
+      {id:"s6c2", txt:"Integrate v1 with SITL loop"}]},
+    {id:"t6d", t:"m", label:"M2: First Auto Run", subs:[
+      {id:"s6d1", txt:"Autonomous navigation between 2 waypoints"}]}
+  ]},
+  { n:7, label:"Wk 7", sub:"Tuning", tasks:[
+    {id:"t7a", t:"p", label:"PID Tuning", subs:[
+      {id:"s7a1", txt:"Record cross-track error in various winds"},
+      {id:"s7a2", txt:"Fix sim-to-real steering discrepancies"}]},
+    {id:"t7b", t:"s", label:"Comparison Tests", subs:[
+      {id:"s7b1", txt:"Run Novel vs Lawnmower (Steady Wind)"},
+      {id:"s7b2", txt:"Run Novel vs Lawnmower (Shifting Wind)"}]},
+    {id:"t7c", t:"r", label:"Iterate v2", subs:[
+      {id:"s7c1", txt:"Refine tack-cost penalty weights"},
+      {id:"s7c2", txt:"Optimize path-branching logic performance"}]}
+  ]},
+  { n:8, label:"Wk 8", sub:"Analysis", tasks:[
+    {id:"t8a", t:"p", label:"Final Data Runs", subs:[
+      {id:"s8a1", txt:"Collect high-res 1Hz GPS logs"},
+      {id:"s8a2", txt:"Record video of autonomous maneuvers"}]},
+    {id:"t8b", t:"s", label:"Statistical Suite", subs:[
+      {id:"s8b1", txt:"Calculate coverage % over 20+ runs"},
+      {id:"s8b2", txt:"Measure mean time-to-complete metrics"}]},
+    {id:"t8c", t:"m", label:"M3: Data Locked", subs:[
+      {id:"s8c1", txt:"All experimental simulation runs completed"}]}
+  ]},
+  { n:9, label:"Wk 9", sub:"Writing", tasks:[
+    {id:"t9a", t:"p", label:"Hardware Wrap", subs:[
+      {id:"s9a1", txt:"Archive physical wiring diagrams"},
+      {id:"s9a2", txt:"Final high-quality build photos"}]},
+    {id:"t9b", t:"r", label:"Full Report Draft", subs:[
+      {id:"s9b1", txt:"Write Introduction and Methods"},
+      {id:"s9b2", txt:"Draft Results and Discussion sections"}]},
+    {id:"t9c", t:"s", label:"Visualizations", subs:[
+      {id:"s9c1", txt:"Generate path plots and error heatmaps"}]}
+  ]},
+  { n:10, label:"Wk 10", sub:"Final", tasks:[
+    {id:"t10a", t:"r", label:"Final Submission", subs:[
+      {id:"s10a1", txt:"Incorporate feedback into final PDF"},
+      {id:"s10a2", txt:"Clean and push code to main repo"}]},
+    {id:"t10b", t:"m", label:"M4: Project End", subs:[
+      {id:"s10b1", txt:"Final report submitted to advisor"}]}
+  ]}
+];
+
+// Persistent State
+let completed = JSON.parse(localStorage.getItem('ragazza-v2-progress')) || [];
+let activeTaskID = null;
+
+function toggleItem(id) {
+  if (completed.includes(id)) {
+    completed = completed.filter(i => i !== id);
+  } else {
+    completed.push(id);
+  }
+  localStorage.setItem('ragazza-v2-progress', JSON.stringify(completed));
+  render();
+  if (activeTaskID) refreshDetail(); // Update detail panel view if it's open
+}
+
+function selectTask(id) {
+  activeTaskID = id;
+  render();
+  refreshDetail();
+}
+
+function refreshDetail() {
+  const task = weeks.flatMap(w => w.tasks).find(t => t.id === activeTaskID);
+  if (!task) return;
+
+  const title = document.getElementById('detail-title');
+  const content = document.getElementById('detail-content');
+  
+  title.textContent = task.label;
+  content.innerHTML = `
+    <div class="sub-list">
+      ${task.subs.map(s => `
+        <div class="sub-item ${completed.includes(s.id) ? 'checked' : ''}" onclick="toggleItem('${s.id}')">
+          <div class="checkbox"></div>
+          <div class="sub-text">${s.txt}</div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function updateProgress() {
+  const allSubIds = weeks.flatMap(w => w.tasks).flatMap(t => t.subs).map(s => s.id);
+  const doneSubIds = allSubIds.filter(id => completed.includes(id));
+  const progress = (doneSubIds.length / allSubIds.length) * 100;
+  document.getElementById('progress-bar').style.width = `${progress}%`;
+}
+
+function render() {
+  const tl = document.getElementById('timeline');
+  tl.innerHTML = '';
+
+  weeks.forEach(w => {
+    const col = document.createElement('div');
+    col.className = 'week-col';
+
+    const head = document.createElement('div');
+    head.className = 'week-head' + (w.current ? ' current' : '');
+    head.innerHTML = `<div>${w.label}</div><div style="font-size:9px; opacity:0.6">${w.sub}</div>`;
+    col.appendChild(head);
+
+    w.tasks.forEach(task => {
+      // A task is "done" if all its sub-tasks are done
+      const isDone = task.subs.every(s => completed.includes(s.id));
+      const isActive = activeTaskID === task.id;
+      
+      const card = document.createElement('div');
+      card.className = `task-card ${task.t} ${isDone ? 'completed' : ''} ${isActive ? 'active' : ''}`;
+      
+      card.innerHTML = `
+        <div class="checkbox" onclick="event.stopPropagation(); task.subs.forEach(s => { if(!completed.includes(s.id)) toggleItem(s.id) })"></div>
+        <div class="task-label">${task.label}</div>
+      `;
+      
+      card.onclick = () => selectTask(task.id);
+      col.appendChild(card);
+    });
+
+    tl.appendChild(col);
+  });
+
+  updateProgress();
+}
+
+render();
+</script>
+
+</body>
+</html>
