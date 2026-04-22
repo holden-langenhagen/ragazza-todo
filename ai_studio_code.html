@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ragazza Master Research Planner</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  
+  :root {
+    --bg: #f5f4f0; --text: #1a1a18;
+    --card-p: #E1F5EE; --p-text: #085041; --p-border: #9FE1CB;
+    --card-s: #EEEDFE; --s-text: #3C3489; --s-border: #AFA9EC;
+    --card-r: #FAEEDA; --r-text: #633806; --r-border: #FAC775;
+    --card-m: #FCEBEB; --m-text: #791F1F; --m-border: #F09595;
+    --panel-bg: #eceae4; --panel-border: #d3d1c7; --accent: #1D9E75;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1a1a18; --text: #e0ded6;
+      --card-p: #04342C; --p-text: #9FE1CB; --p-border: #0F6E56;
+      --card-s: #26215C; --s-text: #CECBF6; --s-border: #534AB7;
+      --card-r: #412402; --r-text: #FAC775; --r-border: #854F0B;
+      --card-m: #501313; --m-text: #F7C1C1; --m-border: #A32D2D;
+      --panel-bg: #2a2a27; --panel-border: #3a3a36;
+    }
+  }
+
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); padding: 20px; min-height: 100vh; }
+  .container { max-width: 1400px; margin: 0 auto; }
+
+  .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .btn { 
+    padding: 6px 12px; border-radius: 6px; border: 1px solid var(--panel-border); 
+    background: var(--panel-bg); color: var(--text); cursor: pointer; font-size: 12px; transition: 0.2s;
+  }
+  .btn:hover { background: var(--panel-border); }
+  .btn-primary { background: var(--accent); color: white; border: none; }
+
+  .progress-container { width: 100%; height: 8px; background: var(--panel-border); border-radius: 4px; margin-bottom: 25px; overflow: hidden; }
+  #progress-bar { height: 100%; width: 0%; background: var(--accent); transition: width 0.4s ease; }
+
+  .timeline { display: flex; gap: 15px; overflow-x: auto; padding-bottom: 20px; align-items: flex-start; }
+  .week-col { min-width: 220px; flex: 0 0 220px; background: rgba(0,0,0,0.03); border-radius: 12px; padding: 12px; border: 1px solid transparent; }
+  
+  .week-head { font-size: 14px; font-weight: 700; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+  .week-head input { background: transparent; border: none; color: inherit; font-weight: inherit; width: 80%; cursor: edit; }
+
+  .task-card {
+    border-radius: 8px; padding: 10px; margin-bottom: 8px; font-size: 12px; 
+    cursor: pointer; border: 1px solid transparent; display: flex; gap: 8px; transition: 0.15s; position: relative;
+  }
+  .task-card:hover { transform: translateY(-2px); box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+  .task-card.active { border-color: var(--text); box-shadow: 0 0 0 1px var(--text); }
+  .task-card.completed { opacity: 0.4; }
+  .task-card.completed .task-label { text-decoration: line-through; }
+
+  .task-card.p { background: var(--card-p); color: var(--p-text); border-color: var(--p-border); }
+  .task-card.s { background: var(--card-s); color: var(--s-text); border-color: var(--s-border); }
+  .task-card.r { background: var(--card-r); color: var(--r-text); border-color: var(--r-border); }
+  .task-card.m { background: var(--card-m); color: var(--m-text); border-color: var(--m-border); font-weight: 600; }
+
+  .checkbox { width: 16px; height: 16px; border: 1.5px solid currentColor; border-radius: 4px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+  .completed .checkbox::after, .sub-item.checked .checkbox::after { content: "✓"; font-size: 11px; font-weight: bold; }
+
+  .detail-panel { border: 1px solid var(--panel-border); border-radius: 12px; padding: 25px; margin-top: 10px; background: var(--panel-bg); box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+  .sub-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; font-size: 14px; cursor: pointer; border-bottom: 1px solid rgba(0,0,0,0.05); }
+  .sub-item.checked { opacity: 0.5; }
+  .sub-item.checked span { text-decoration: line-through; }
+  .sub-item.checked .checkbox { background: var(--accent); color: white; border-color: var(--accent); }
+  
+  .delete-btn { opacity: 0.3; font-size: 10px; margin-left: auto; cursor: pointer; padding: 4px; }
+  .delete-btn:hover { opacity: 1; color: #ff4444; }
+
+  .add-input-group { display: flex; gap: 8px; margin-top: 15px; }
+  .add-input-group input { flex: 1; padding: 10px; border-radius: 6px; border: 1px solid var(--panel-border); background: var(--bg); color: var(--text); }
+
+  .type-selector { display: flex; gap: 8px; margin-bottom: 15px; align-items: center; }
+  .type-dot { width: 18px; height: 18px; border-radius: 4px; cursor: pointer; border: 2px solid transparent; }
+  .type-dot.active { border-color: var(--text); transform: scale(1.1); }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <div style="font-size: 22px; font-weight: 800;">Ragazza Research Planner <span style="font-weight: 300; font-size: 14px; opacity: 0.6;">v2.0 Dynamic</span></div>
+    <div>
+      <button class="btn" onclick="addCategory()">+ New Week/Category</button>
+      <button class="btn" onclick="resetData()" style="color: #ff4444; margin-left: 10px;">Full Reset</button>
+    </div>
+  </div>
+
+  <div class="progress-container"><div id="progress-bar"></div></div>
+
+  <div class="timeline" id="timeline"></div>
+
+  <div class="detail-panel" id="detail-panel" style="display:none;">
+    <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h3 id="detail-title">Task Details</h3>
+        <button class="btn" onclick="deleteTask()" style="color:red; border-color: rgba(255,0,0,0.2)">Delete Entire Task</button>
+    </div>
+    <div id="sub-items-container"></div>
+    <div class="add-input-group">
+      <input type="text" id="new-sub-input" placeholder="Add a specific sub-bullet or requirement...">
+      <button class="btn-primary" onclick="addSubItem()">Add Step</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// The Original Dataset mapped to the dynamic structure
+const defaultData = [
+  { id: 'c4', label: 'Week 4 - Setup', tasks: [
+    { id: 't4a', label: 'Manual water test', type: 'p', subs: [{id:'s1', txt:'Telemetry to QGC fully working', done:false}, {id:'s2', txt:'Confirm servo, rudder, sail response', done:false}, {id:'s3', txt:'Document hardware issues', done:false}] },
+    { id: 't4b', label: 'SITL stack in Docker', type: 's', subs: [{id:'s4', txt:'ArduPilot SITL sailboat in Docker', done:false}, {id:'s5', txt:'Confirm QGC connects to sim boat', done:false}] },
+    { id: 't4c', label: 'Finalize Research Focus', type: 'r', subs: [{id:'s6', txt:'Lock in CPP as core direction', done:false}, {id:'s7', txt:'Identify gap: wind uncertainty + tack cost', done:false}] },
+    { id: 't4d', label: 'M1: WORKING BASELINE', type: 'm', subs: [{id:'s8', txt:'Physical boat controllable', done:false}, {id:'s9', txt:'Sim stack verified', done:false}] }
+  ]},
+  { id: 'c5', label: 'Week 5 - Build', tasks: [
+    { id: 't5a', label: '3D Print & Wire Hull', type: 'p', subs: [{id:'s10', txt:'Print Pi/Pixhawk mounts', done:false}, {id:'s11', txt:'Route internal wiring cleanly', done:false}] },
+    { id: 't5b', label: 'Custom Wind Field', type: 's', subs: [{id:'s12', txt:'Implement noisy directional wind', done:false}, {id:'s13', txt:'Verify realistic boat physics', done:false}] },
+    { id: 't5c', label: 'Algo Design Draft', type: 'r', subs: [{id:'s14', txt:'Define formal uncertainty model', done:false}, {id:'s15', txt:'Sketch reward-based CPP planner', done:false}] }
+  ]},
+  { id: 'c6', label: 'Week 6 - Nav', tasks: [
+    { id: 't6a', label: 'RasPi Nav Loop', type: 'p', subs: [{id:'s16', txt:'Waypoint follow via MAVLink', done:false}, {id:'s17', txt:'Verify GPS-based outdoor navigation', done:false}] },
+    { id: 't6b', label: 'Baseline CPP Sim', type: 's', subs: [{id:'s18', txt:'Implement lawnmower algorithm', done:false}, {id:'s19', txt:'Log path, area, and tacks', done:false}] },
+    { id: 't6c', label: 'Novel Algo v1', type: 'r', subs: [{id:'s20', txt:'Code novel planner in Python', done:false}, {id:'s21', txt:'Explicitly model tack cost penalty', done:false}] }
+  ]},
+  { id: 'c7', label: 'Week 7 - Tuning', tasks: [
+    { id: 't7a', label: 'Physical Tuning', type: 'p', subs: [{id:'s22', txt:'Tune PID / cross-track error', done:false}, {id:'s23', txt:'Document sim-to-real gap', done:false}] },
+    { id: 't7b', label: 'Novel Algo Experiments', type: 's', subs: [{id:'s24', txt:'Run vs baseline in 3 wind scenarios', done:false}, {id:'s25', txt:'Measure coverage % and efficiency', done:false}] }
+  ]},
+  { id: 'c8', label: 'Week 8 - Data', tasks: [
+    { id: 't8a', label: 'Physical Data Logs', type: 'p', subs: [{id:'s26', txt:'Collect GPS tracks of novel algo', done:false}, {id:'s27', txt:'Record manual ground truth data', done:false}] },
+    { id: 't8b', label: 'Statistical Analysis', type: 'r', subs: [{id:'s28', txt:'Does algo beat baseline? Why?', done:false}, {id:'s29', txt:'Analyze failure modes', done:false}] },
+    { id: 't8c', label: 'M3: RESULTS READY', type: 'm', subs: [{id:'s30', txt:'Hypothesis answered', done:false}, {id:'s31', txt:'Report drafting underway', done:false}] }
+  ]},
+  { id: 'c9', label: 'Week 9 - Finalize', tasks: [
+    { id: 't9a', label: 'System Photos/Video', type: 'p', subs: [{id:'s32', txt:'Final high-res build photos', done:false}, {id:'s33', txt:'Clean up hardware config', done:false}] },
+    { id: 't9b', label: 'Write Full Report', type: 'r', subs: [{id:'s34', txt:'Intro, Methods, Results, Discussion', done:false}, {id:'s35', txt:'Get advisor feedback', done:false}] }
+  ]},
+  { id: 'c10', label: 'Week 10 - Sub', tasks: [
+    { id: 't10a', label: 'Submit Final Report', type: 'r', subs: [{id:'s36', txt:'Polish figures and writing', done:false}, {id:'s37', txt:'Final submission to advisor', done:false}] },
+    { id: 't10b', label: 'M4: PROJECT END', type: 'm', subs: [{id:'s38', txt:'Code and data archived', done:false}] }
+  ]}
+];
+
+// App State
+let data = JSON.parse(localStorage.getItem('ragazza-dynamic-master')) || defaultData;
+let activeTaskId = null;
+let activeCatId = null;
+
+function save() {
+    localStorage.setItem('ragazza-dynamic-master', JSON.stringify(data));
+    render();
+}
+
+function resetData() {
+    if(confirm("This will delete all progress and custom items, and restore the original 10-week plan. Continue?")) {
+        localStorage.removeItem('ragazza-dynamic-master');
+        location.reload();
+    }
+}
+
+// Category Logic
+function addCategory() {
+    const name = prompt("Category Name (e.g. Week 11):");
+    if (!name) return;
+    data.push({ id: 'c' + Date.now(), label: name, tasks: [] });
+    save();
+}
+
+function deleteCategory(catId) {
+    if(!confirm("Delete this entire category and all its tasks?")) return;
+    data = data.filter(c => c.id !== catId);
+    if (activeCatId === catId) hidePanel();
+    save();
+}
+
+function updateCatLabel(catId, val) {
+    data.find(c => c.id === catId).label = val;
+    localStorage.setItem('ragazza-dynamic-master', JSON.stringify(data));
+}
+
+// Task Logic
+function addTask(catId) {
+    const label = prompt("Task Description:");
+    if (!label) return;
+    const cat = data.find(c => c.id === catId);
+    const newTask = { id: 't' + Date.now(), label, type: 'r', subs: [] };
+    cat.tasks.push(newTask);
+    save();
+    selectTask(catId, newTask.id);
+}
+
+function deleteTask() {
+    if(!confirm("Delete task?")) return;
+    const cat = data.find(c => c.id === activeCatId);
+    cat.tasks = cat.tasks.filter(t => t.id !== activeTaskId);
+    hidePanel();
+    save();
+}
+
+function changeTaskType(type) {
+    const task = data.find(c => c.id === activeCatId).tasks.find(t => t.id === activeTaskId);
+    task.type = type;
+    save();
+    refreshDetail();
+}
+
+// Sub-Item Logic
+function addSubItem() {
+    const input = document.getElementById('new-sub-input');
+    if (!input.value) return;
+    const task = data.find(c => c.id === activeCatId).tasks.find(t => t.id === activeTaskId);
+    task.subs.push({ id: 's' + Date.now(), txt: input.value, done: false });
+    input.value = '';
+    save();
+    refreshDetail();
+}
+
+function toggleSub(subId) {
+    const sub = data.find(c => c.id === activeCatId).tasks.find(t => t.id === activeTaskId).subs.find(s => s.id === subId);
+    sub.done = !sub.done;
+    save();
+    refreshDetail();
+}
+
+function deleteSub(subId) {
+    const task = data.find(c => c.id === activeCatId).tasks.find(t => t.id === activeTaskId);
+    task.subs = task.subs.filter(s => s.id !== subId);
+    save();
+    refreshDetail();
+}
+
+// UI Selection Logic
+function selectTask(catId, taskId) {
+    activeCatId = catId;
+    activeTaskId = taskId;
+    document.getElementById('detail-panel').style.display = 'block';
+    render();
+    refreshDetail();
+    document.getElementById('detail-panel').scrollIntoView({ behavior: 'smooth' });
+}
+
+function hidePanel() {
+    activeTaskId = null;
+    activeCatId = null;
+    document.getElementById('detail-panel').style.display = 'none';
+}
+
+function refreshDetail() {
+    const task = data.find(c => c.id === activeCatId).tasks.find(t => t.id === activeTaskId);
+    document.getElementById('detail-title').innerText = task.label;
+    const container = document.getElementById('sub-items-container');
+    
+    container.innerHTML = `
+        <div class="type-selector">
+            <span style="font-size:11px; font-weight:600; margin-right:10px;">CATEGORY:</span>
+            ${['p','s','r','m'].map(type => `
+                <div class="type-dot ${type} ${task.type === type ? 'active' : ''}" 
+                     onclick="changeTaskType('${type}')"></div>
+            `).join('')}
+        </div>
+    `;
+    
+    task.subs.forEach(s => {
+        const item = document.createElement('div');
+        item.className = `sub-item ${s.done ? 'checked' : ''}`;
+        item.onclick = () => toggleSub(s.id);
+        item.innerHTML = `
+            <div class="checkbox"></div>
+            <span>${s.txt}</span>
+            <span class="delete-btn" onclick="event.stopPropagation(); deleteSub('${s.id}')">✕</span>
+        `;
+        container.appendChild(item);
+    });
+}
+
+function updateProgress() {
+    const allSubs = data.flatMap(c => c.tasks).flatMap(t => t.subs);
+    if (allSubs.length === 0) {
+        document.getElementById('progress-bar').style.width = '0%';
+        return;
+    }
+    const done = allSubs.filter(s => s.done).length;
+    document.getElementById('progress-bar').style.width = `${(done / allSubs.length) * 100}%`;
+}
+
+function render() {
+    const tl = document.getElementById('timeline');
+    tl.innerHTML = '';
+
+    data.forEach(cat => {
+        const col = document.createElement('div');
+        col.className = 'week-col';
+        col.innerHTML = `
+            <div class="week-head">
+                <input value="${cat.label}" onchange="updateCatLabel('${cat.id}', this.value)">
+                <span class="delete-btn" onclick="deleteCategory('${cat.id}')">✕</span>
+            </div>
+            <div id="tasks-${cat.id}"></div>
+            <button class="btn" style="width:100%; margin-top:10px; border-style:dashed;" onclick="addTask('${cat.id}')">+ Add Task</button>
+        `;
+
+        const taskContainer = col.querySelector(`#tasks-${cat.id}`);
+        cat.tasks.forEach(task => {
+            const isDone = task.subs.length > 0 && task.subs.every(s => s.done);
+            const card = document.createElement('div');
+            card.className = `task-card ${task.type} ${isDone ? 'completed' : ''} ${activeTaskId === task.id ? 'active' : ''}`;
+            card.onclick = () => selectTask(cat.id, task.id);
+            card.innerHTML = `
+                <div class="checkbox" onclick="event.stopPropagation(); task.subs.forEach(s => s.done = !isDone); save(); refreshDetail();"></div>
+                <div class="task-label">${task.label}</div>
+            `;
+            taskContainer.appendChild(card);
+        });
+        tl.appendChild(col);
+    });
+    updateProgress();
+}
+
+render();
+</script>
+</body>
+</html>
